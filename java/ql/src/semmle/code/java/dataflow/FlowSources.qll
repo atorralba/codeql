@@ -223,7 +223,7 @@ class ReverseDNSMethod extends Method {
 
 /** Android `Intent` that may have come from a hostile application. */
 class AndroidIntentInput extends DataFlow::Node {
-  Type receiverType;
+  RefType receiverType;
 
   AndroidIntentInput() {
     exists(MethodAccess ma, AndroidGetIntentMethod m |
@@ -242,7 +242,34 @@ class AndroidIntentInput extends DataFlow::Node {
 
 /** Exported Android `Intent` that may have come from a hostile application. */
 class ExportedAndroidIntentInput extends RemoteFlowSource, AndroidIntentInput {
-  ExportedAndroidIntentInput() { receiverType.(ExportableAndroidComponent).isExported() }
+  ExportedAndroidIntentInput() {
+    receiverType.(ExportableAndroidComponent).isExported()
+    or
+    // This generates spurious results when both an unexported and exported activity extend a base class
+    // that provides data from the intent with a helper method.
+    //
+    // exists(ExportableAndroidComponent exported | exported.isExported() |
+    //   exported.getASourceSupertype*() = receiverType
+    // )
+    // or
+    exists(DataFlow::Node sink, ExportedAndroidComponentFlowConfig cfg | cfg.hasFlowTo(sink) |
+      sink.asExpr() = this.asExpr().(MethodAccess).getQualifier()
+    )
+  }
 
   override string getSourceType() { result = "Exported Android intent source" }
+}
+
+private class ExportedAndroidComponentFlowConfig extends DataFlow2::Configuration {
+  ExportedAndroidComponentFlowConfig() { this = "FlowSources::ExportedAndroidComponentFlowConfig" }
+
+  override predicate isSource(DataFlow2::Node src) {
+    src.asExpr().getType().(ExportableAndroidComponent).isExported()
+  }
+
+  override predicate isSink(DataFlow2::Node sink) {
+    exists(AndroidGetIntentMethod m, MethodAccess ma | ma.getMethod() = m |
+      sink = DataFlow::getInstanceArgument(ma)
+    )
+  }
 }

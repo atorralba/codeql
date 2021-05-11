@@ -1,20 +1,15 @@
 package com.example.app;
 
-import android.app.Activity;
-
 import android.os.Bundle;
 
 import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 
-public class UnsafeActivity4 extends Activity {
-	/*
-	 * Test onCreate with both JavaScript and cross-origin resource access enabled while taking
-	 * remote user inputs from bundle extras.
-	 * 
-	 * The Activity is explicitly exported.
-	 */
+public class SafeActivity4 extends BaseActivity {
+	// Test onCreate with both JavaScript and cross-origin resource access enabled while taking
+	// remote user inputs from bundle extras.
+	// The Activity is implicitly not exported.
 	public void onCreate(Bundle savedInstanceState) {
 		super.onCreate(savedInstanceState);
 		setContentView(-1);
@@ -33,10 +28,9 @@ public class UnsafeActivity4 extends Activity {
 			}
 		});
 
-		String thisUrl = IntentUtils.getIntentUrl(this);
-		wv.loadUrl(thisUrl); // $hasUnsafeAndroidAccess
-		thisUrl = IntentUtils.getBundleUrl(this);
-		wv.loadUrl(thisUrl); // $hasUnsafeAndroidAccess
-
+		String thisUrl = getIntentUrl();
+		wv.loadUrl(thisUrl); // Safe
+		thisUrl = getBundleUrl();
+		wv.loadUrl(thisUrl); // Safe
 	}
 }
