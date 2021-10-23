@@ -42,8 +42,13 @@
 
         <activity android:name=".SafeActivity3" />
 
+        <activity android:name=".SafeActivity4" />
+
         <activity android:name=".UnsafeActivity3" android:exported="true" />
+
         <activity android:name=".UnsafeActivity4" android:exported="true" />
+
+        <activity android:name=".UnsafeActivity5" android:exported="true" />
 
         <receiver android:name=".UnsafeAndroidBroadcastReceiver" android:exported="true" />        
     </application>
