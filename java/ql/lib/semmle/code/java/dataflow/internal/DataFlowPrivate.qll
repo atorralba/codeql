@@ -11,15 +11,55 @@ private import FlowSummaryImpl as FlowSummaryImpl
 private import DataFlowImplConsistency
 import DataFlowNodes::Private
 
-private newtype TReturnKind = TNormalReturnKind()
+private newtype TReturnKind =
+  TNormalReturnKind() or
+  TJumpReturnKind(Callable target, ReturnKind rk) {
+    target.isSourceDeclaration() and
+    (
+      rk instanceof NormalReturnKind and
+      (
+        target instanceof Constructor or
+        not target.getReturnType() instanceof VoidType
+      )
+    )
+  }
 
 /**
  * A return kind. A return kind describes how a value can be returned
- * from a callable. For Java, this is simply a method return.
+ * from a callable.
  */
-class ReturnKind extends TReturnKind {
+abstract class ReturnKind extends TReturnKind {
   /** Gets a textual representation of this return kind. */
-  string toString() { result = "return" }
+  abstract string toString();
+}
+
+/**
+ * A value returned from a callable using a `return` statement or an expression
+ * body, that is, a "normal" return.
+ */
+class NormalReturnKind extends ReturnKind, TNormalReturnKind {
+  override string toString() { result = "return" }
+}
+
+/**
+ * A value returned through the output of another callable.
+ *
+ * This is currently only used to model flow summaries where data may flow into
+ * one API entry point and out of another.
+ */
+class JumpReturnKind extends ReturnKind, TJumpReturnKind {
+  private Callable target;
+  private ReturnKind rk;
+
+  JumpReturnKind() { this = TJumpReturnKind(target, rk) }
+
+  /** Gets the target of the jump. */
+  Callable getTarget() { result = target }
+
+  /** Gets the return kind of the target. */
+  ReturnKind getTargetReturnKind() { result = rk }
+
+  override string toString() { result = "jump to " + target }
 }
 
 /**
@@ -71,8 +111,8 @@ private predicate variableCaptureStep(Node node1, ExprNode node2) {
 }
 
 /**
- * Holds if data can flow from `node1` to `node2` through a static field or
- * variable capture.
+ * Holds if data can flow from `node1` to `node2` through a static field,
+ * variable capture, or by jumping from one callabe to another.
  */
 predicate jumpStep(Node node1, Node node2) {
   staticFieldStep(node1, node2)
@@ -83,6 +123,12 @@ predicate jumpStep(Node node1, Node node2) {
   or
   any(AdditionalValueStep a).step(node1, node2) and
   node1.getEnclosingCallable() != node2.getEnclosingCallable()
+  or
+  exists(JumpReturnKind jrk, SrcCall call |
+    FlowSummaryImpl::Private::summaryReturnNode(node1, jrk) and
+    jrk.getTarget() = call.asCall().getCallee() and
+    node2 = getAnOutNode(call, jrk.getTargetReturnKind())
+  )
 }
 
 /**
