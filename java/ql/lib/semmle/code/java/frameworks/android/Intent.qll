@@ -71,7 +71,7 @@ class AndroidReceiveIntentMethod extends Method {
  */
 class AndroidServiceIntentMethod extends Method {
   AndroidServiceIntentMethod() {
-    this.getName().matches(["onStart%", "on%ind", "onTaskRemoved"]) and
+    this.hasName(["onStart", "onStartCommand", "onBind", "onRebind", "onUnbind", "onTaskRemoved"]) and
     this.getDeclaringType() instanceof TypeService
   }
 }
@@ -305,22 +305,12 @@ private class StartActivityIntentStep extends AdditionalValueStep {
   override predicate step(DataFlow::Node n1, DataFlow::Node n2) { startActivityIntentStep(n1, n2) }
 }
 
-/**
- * An `ArrayContent`-reading step from the array argument of a `startActivities` call to
- * a `getIntent` call in one of the activities any of the intents targeted in their constructor.
- */
-private class StartActivitiesIntentReadStep extends AdditionalReadStep {
-  override predicate step(DataFlow::Node n1, DataFlow::Content f, DataFlow::Node n2) {
-    f instanceof DataFlow::ArrayContent and
-    startActivityIntentStep(n1, n2)
-  }
-}
-
-/**
+/*
  * A value-preserving step from the intent argument of a `sendBroadcast` call to
  * the intent parameter in the `onReceive` method of the receiver the
  * intent targeted in its constructor.
  */
+
 private class SendBroadcastReceiverIntentStep extends AdditionalValueStep {
   override predicate step(DataFlow::Node n1, DataFlow::Node n2) {
     exists(StartComponentMethodAccess sendBroadcast, Method onReceive |
