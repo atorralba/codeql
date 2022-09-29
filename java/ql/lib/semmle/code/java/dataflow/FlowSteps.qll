@@ -82,20 +82,6 @@ class AdditionalValueStep extends Unit {
 }
 
 /**
- * A unit class for adding additional read steps.
- *
- * Extend this class to add additional content-reading steps that should apply
- * to all data flow configurations.
- */
-class AdditionalReadStep extends Unit {
-  /**
-   * Holds if the step from `node1` to `node2` is a step that reads `f` and
-   * should apply to all data flow configurations.
-   */
-  abstract predicate step(DataFlow::Node node1, DataFlow::Content f, DataFlow::Node node2);
-}
-
-/**
  * A method or constructor that preserves taint.
  *
  * Extend this class and override at least one of `returnsTaintFrom` or `transfersTaint`

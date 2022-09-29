@@ -143,8 +143,6 @@ predicate readStep(Node node1, Content f, Node node2) {
   f instanceof CollectionContent and collectionReadStep(node1, node2)
   or
   FlowSummaryImpl::Private::Steps::summaryReadStep(node1, f, node2)
-  or
-  any(AdditionalReadStep s).step(node1, f, node2)
 }
 
 /**
