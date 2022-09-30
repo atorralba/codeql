@@ -106,7 +106,7 @@ private module Cached {
    */
   cached
   predicate localFlowStep(Node node1, Node node2) {
-    simpleLocalFlowStep0(node1, node2)
+    simpleLocalFlowStep1(node1, node2)
     or
     adjacentUseUse(node1.asExpr(), node2.asExpr())
     or
@@ -123,7 +123,7 @@ private module Cached {
    */
   cached
   predicate simpleLocalFlowStep(Node node1, Node node2) {
-    simpleLocalFlowStep0(node1, node2)
+    simpleLocalFlowStep1(node1, node2)
     or
     any(AdditionalValueStep a).step(node1, node2) and
     pragma[only_bind_out](node1.getEnclosingCallable()) =
@@ -135,7 +135,59 @@ private module Cached {
 
 import Cached
 
-private predicate simpleLocalFlowStep0(Node node1, Node node2) {
+predicate simpleLocalFlowStep0(Node node1, Node node2) {
+  TaintTrackingUtil::forceCachingInSameStage() and
+  // Variable flow steps through adjacent def-use and use-use pairs.
+  // exists(SsaExplicitUpdate upd |
+  //   upd.getDefiningExpr().(VariableAssign).getSource() = node1.asExpr() or
+  //   upd.getDefiningExpr().(AssignOp) = node1.asExpr()
+  // |
+  //   node2.asExpr() = upd.getAFirstUse()
+  // )
+  // or
+  // exists(SsaImplicitInit init |
+  //   init.isParameterDefinition(node1.asParameter()) and
+  //   node2.asExpr() = init.getAFirstUse()
+  // )
+  // or
+  // adjacentUseUse(node1.asExpr(), node2.asExpr()) and
+  // not exists(FieldRead fr |
+  //   hasNonlocalValue(fr) and fr.getField().isStatic() and fr = node1.asExpr()
+  // ) and
+  // not FlowSummaryImpl::Private::Steps::prohibitsUseUseFlow(node1, _)
+  // or
+  ThisFlow::adjacentThisRefs(node1, node2)
+  or
+  // adjacentUseUse(node1.(PostUpdateNode).getPreUpdateNode().asExpr(), node2.asExpr())
+  // or
+  ThisFlow::adjacentThisRefs(node1.(PostUpdateNode).getPreUpdateNode(), node2)
+  or
+  node2.asExpr().(CastingExpr).getExpr() = node1.asExpr()
+  or
+  node2.asExpr().(ChooseExpr).getAResultExpr() = node1.asExpr()
+  or
+  node2.asExpr().(AssignExpr).getSource() = node1.asExpr()
+  or
+  node2.asExpr().(ArrayCreationExpr).getInit() = node1.asExpr()
+  or
+  node2.asExpr() = any(StmtExpr stmtExpr | node1.asExpr() = stmtExpr.getResultExpr())
+  or
+  node2.asExpr() = any(NotNullExpr nne | node1.asExpr() = nne.getExpr())
+  or
+  node2.asExpr().(WhenExpr).getBranch(_).getAResult() = node1.asExpr()
+  // exists(MethodAccess ma, ValuePreservingMethod m, int argNo |
+  //   ma.getCallee().getSourceDeclaration() = m and m.returnsValue(argNo)
+  // |
+  //   node2.asExpr() = ma and
+  //   node1.(ArgumentNode).argumentOf(any(DataFlowCall c | c.asCall() = ma), argNo)
+  // )
+  // or
+  // FlowSummaryImpl::Private::Steps::summaryLocalStep(node1, node2, true)
+}
+
+private predicate simpleLocalFlowStep1(Node node1, Node node2) {
+  simpleLocalFlowStep0(node1, node2)
+  or
   TaintTrackingUtil::forceCachingInSameStage() and
   // Variable flow steps through adjacent def-use and use-use pairs.
   exists(SsaExplicitUpdate upd |

@@ -401,7 +401,7 @@ module Private {
     }
 
     /** Gets the kind of this returned value. */
-    ReturnKind getKind() { any() }
+    NormalReturnKind getKind() { any() }
   }
 
   /** A data flow node that represents the output of a call. */
