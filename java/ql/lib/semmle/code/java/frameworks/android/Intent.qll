@@ -4,6 +4,7 @@ private import semmle.code.java.dataflow.ExternalFlow
 private import semmle.code.java.dataflow.FlowSteps
 private import semmle.code.java.dataflow.internal.ContainerFlow
 private import semmle.code.java.dataflow.FlowSummary
+private import semmle.code.java.dataflow.internal.BaseSSA as BaseSSA
 
 /**
  * The class `android.content.Intent`.
@@ -277,11 +278,20 @@ private class StartComponentMethodAccess extends MethodAccess {
   }
 }
 
-/** Holds if `src` reaches `arg` through intra-procedural steps. */
+/**
+ * Holds if `src` reaches the intent argument of a `StartComponentMethodAccess`
+ * through intra-procedural steps.
+ */
 private predicate reaches(Expr src, Argument arg) {
+  any(StartComponentMethodAccess ma).getIntentArg() = arg and
   src = arg
   or
-  src.(VarAccess).getVariable().getAnAccess() = arg
+  exists(Expr mid, BaseSSA::BaseSsaVariable ssa, BaseSSA::BaseSsaUpdate upd |
+    reaches(mid, arg) and
+    mid = ssa.getAUse() and
+    upd = ssa.getAnUltimateLocalDefinition() and
+    src = upd.getDefiningExpr().(VariableAssign).getSource()
+  )
   or
   exists(CastingExpr e | e.getExpr() = src | reaches(e, arg))
   or
