@@ -42,19 +42,19 @@ class NormalReturnKind extends ReturnKind, TNormalReturnKind {
 }
 
 /**
- * A value returned through the output of another callable.
+ * A value returned through the output of another call.
  *
  * This is currently only used to model flow summaries where data may flow into
  * one API entry point and out of another.
  */
 class JumpReturnKind extends ReturnKind, TJumpReturnKind {
-  private Callable target;
+  private Call target;
   private ReturnKind rk;
 
-  JumpReturnKind() { this = TJumpReturnKind(target, rk) }
+  JumpReturnKind() { this = TJumpReturnKind(target.getCallee(), rk) }
 
   /** Gets the target of the jump. */
-  Callable getTarget() { result = target }
+  Call getTarget() { result = target }
 
   /** Gets the return kind of the target. */
   ReturnKind getTargetReturnKind() { result = rk }
@@ -126,7 +126,7 @@ predicate jumpStep(Node node1, Node node2) {
   or
   exists(JumpReturnKind jrk, SrcCall call |
     FlowSummaryImpl::Private::summaryReturnNode(node1, jrk) and
-    jrk.getTarget() = call.asCall().getCallee() and
+    jrk.getTarget() = call.asCall() and
     node2 = getAnOutNode(call, jrk.getTargetReturnKind())
   )
 }

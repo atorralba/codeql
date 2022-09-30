@@ -3,6 +3,7 @@ private import semmle.code.java.dataflow.DataFlow
 private import semmle.code.java.dataflow.ExternalFlow
 private import semmle.code.java.dataflow.FlowSteps
 private import semmle.code.java.dataflow.internal.ContainerFlow
+private import semmle.code.java.dataflow.FlowSummary
 
 /**
  * The class `android.content.Intent`.
@@ -270,17 +271,31 @@ private class StartComponentMethodAccess extends MethodAccess {
   /** Holds if this targets a component of type `targetType`. */
   predicate targetsComponentType(RefType targetType) {
     exists(NewIntent newIntent |
-      localFlowOrArrayStoreStep*(DataFlow::exprNode(newIntent),
-        DataFlow::exprNode(this.getIntentArg())) and
+      reaches(newIntent, this.getIntentArg()) and
       newIntent.getClassArg().getType().(ParameterizedType).getATypeArgument() = targetType
     )
   }
 }
 
-/** A local data flow step that also includes array store steps. */
-private predicate localFlowOrArrayStoreStep(DataFlow::Node node1, DataFlow::Node node2) {
-  DataFlow::localFlowStep(node1, node2) or
-  arrayStoreStep(node1, node2)
+/** Holds if `src` reaches `arg` through intra-procedural steps. */
+private predicate reaches(Expr src, Argument arg) {
+  src = arg
+  or
+  src.(VarAccess).getVariable().getAnAccess() = arg
+  or
+  exists(CastingExpr e | e.getExpr() = src | reaches(e, arg))
+  or
+  exists(ChooseExpr e | e.getAResultExpr() = src | reaches(e, arg))
+  or
+  exists(AssignExpr e | e.getSource() = src | reaches(e, arg))
+  or
+  exists(ArrayCreationExpr e | e.getInit().getAnInit() = src | reaches(e, arg))
+  or
+  exists(StmtExpr e | e.getResultExpr() = src | reaches(e, arg))
+  or
+  exists(NotNullExpr e | e.getExpr() = src | reaches(e, arg))
+  or
+  exists(WhenExpr e | e.getBranch(_).getAResult() = src | reaches(e, arg))
 }
 
 /**
@@ -305,12 +320,33 @@ private class StartActivityIntentStep extends AdditionalValueStep {
   override predicate step(DataFlow::Node n1, DataFlow::Node n2) { startActivityIntentStep(n1, n2) }
 }
 
-/*
+private class StartActivitiesSummarizedCallable extends SummarizedCallable {
+  StartActivitiesSummarizedCallable() {
+    this.(Method).overrides*(any(StartActivityMethod m | m.hasName("startActivities")))
+  }
+
+  override predicate propagatesFlow(
+    SummaryComponentStack input, SummaryComponentStack output, boolean preservesValue
+  ) {
+    preservesValue = true and
+    exists(DataFlow::ArrayContent c |
+      input =
+        SummaryComponentStack::push(SummaryComponent::content(c), SummaryComponentStack::argument(0)) and
+      exists(MethodAccess getIntent, StartComponentMethodAccess startActivities |
+        startActivities.getMethod() = this and
+        getIntent.getMethod().overrides*(any(AndroidGetIntentMethod m)) and
+        startActivities.targetsComponentType(getIntent.getReceiverType()) and
+        output = SummaryComponentStack::jump(getIntent)
+      )
+    )
+  }
+}
+
+/**
  * A value-preserving step from the intent argument of a `sendBroadcast` call to
  * the intent parameter in the `onReceive` method of the receiver the
  * intent targeted in its constructor.
  */
-
 private class SendBroadcastReceiverIntentStep extends AdditionalValueStep {
   override predicate step(DataFlow::Node n1, DataFlow::Node n2) {
     exists(StartComponentMethodAccess sendBroadcast, Method onReceive |

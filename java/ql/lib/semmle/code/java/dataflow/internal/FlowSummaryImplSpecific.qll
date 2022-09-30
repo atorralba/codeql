@@ -46,7 +46,8 @@ DataFlowType getReturnType(SummarizedCallable c, ReturnKind rk) {
   or
   rk =
     any(JumpReturnKind jrk |
-      result = getErasedRepr(getReturnTypeBase(jrk.getTarget(), jrk.getTargetReturnKind()))
+      result =
+        getErasedRepr(getReturnTypeBase(jrk.getTarget().getCallee(), jrk.getTargetReturnKind()))
     )
 }
 

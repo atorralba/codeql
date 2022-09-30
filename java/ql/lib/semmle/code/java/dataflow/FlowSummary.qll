@@ -29,10 +29,10 @@ module SummaryComponent {
   SummaryComponent return() { result = return(_) }
 
   /** Gets a summary component that represents a jump to `c`. */
-  SummaryComponent jump(Callable c) {
+  SummaryComponent jump(Call c) {
     result =
       return(any(JumpReturnKind jrk |
-          jrk.getTarget() = c.getSourceDeclaration() and
+          jrk.getTarget() = c and
           jrk.getTargetReturnKind() instanceof NormalReturnKind
         ))
   }
@@ -56,7 +56,7 @@ module SummaryComponentStack {
   SummaryComponentStack return() { result = singleton(SummaryComponent::return()) }
 
   /** Gets a singleton stack representing a jump to `c`. */
-  SummaryComponentStack jump(Callable c) { result = singleton(SummaryComponent::jump(c)) }
+  SummaryComponentStack jump(Call c) { result = singleton(SummaryComponent::jump(c)) }
 }
 
 class SummarizedCallable = Impl::Public::SummarizedCallable;
