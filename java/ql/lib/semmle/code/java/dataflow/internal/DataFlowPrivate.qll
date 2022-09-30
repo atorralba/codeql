@@ -13,16 +13,7 @@ import DataFlowNodes::Private
 
 private newtype TReturnKind =
   TNormalReturnKind() or
-  TJumpReturnKind(Callable target, ReturnKind rk) {
-    target.isSourceDeclaration() and
-    (
-      rk instanceof NormalReturnKind and
-      (
-        target instanceof Constructor or
-        not target.getReturnType() instanceof VoidType
-      )
-    )
-  }
+  TJumpReturnKind(Call target)
 
 /**
  * A return kind. A return kind describes how a value can be returned
@@ -49,15 +40,11 @@ class NormalReturnKind extends ReturnKind, TNormalReturnKind {
  */
 class JumpReturnKind extends ReturnKind, TJumpReturnKind {
   private Call target;
-  private ReturnKind rk;
 
-  JumpReturnKind() { this = TJumpReturnKind(target.getCallee(), rk) }
+  JumpReturnKind() { this = TJumpReturnKind(target) }
 
   /** Gets the target of the jump. */
   Call getTarget() { result = target }
-
-  /** Gets the return kind of the target. */
-  ReturnKind getTargetReturnKind() { result = rk }
 
   override string toString() { result = "jump to " + target }
 }
@@ -127,7 +114,7 @@ predicate jumpStep(Node node1, Node node2) {
   exists(JumpReturnKind jrk, SrcCall call |
     FlowSummaryImpl::Private::summaryReturnNode(node1, jrk) and
     jrk.getTarget() = call.asCall() and
-    node2 = getAnOutNode(call, jrk.getTargetReturnKind())
+    node2.(OutNode).getCall() = call
   )
 }
 

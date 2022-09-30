@@ -29,13 +29,7 @@ module SummaryComponent {
   SummaryComponent return() { result = return(_) }
 
   /** Gets a summary component that represents a jump to `c`. */
-  SummaryComponent jump(Call c) {
-    result =
-      return(any(JumpReturnKind jrk |
-          jrk.getTarget() = c and
-          jrk.getTargetReturnKind() instanceof NormalReturnKind
-        ))
-  }
+  SummaryComponent jump(Call c) { result = return(any(JumpReturnKind jrk | jrk.getTarget() = c)) }
 }
 
 class SummaryComponentStack = Impl::Public::SummaryComponentStack;

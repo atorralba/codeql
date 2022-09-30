@@ -30,25 +30,13 @@ SummaryCall summaryDataFlowCall(Node receiver) { result.getReceiver() = receiver
 /** Gets the type of content `c`. */
 DataFlowType getContentType(Content c) { result = c.getType() }
 
-private DataFlowType getReturnTypeBase(Callable c, ReturnKind rk) {
-  rk instanceof NormalReturnKind and
-  (
-    result = c.(Constructor).getDeclaringType()
-    or
-    not c instanceof Constructor and
-    result = c.getReturnType()
-  )
-}
-
 /** Gets the return type of kind `rk` for callable `c`. */
+bindingset[c]
 DataFlowType getReturnType(SummarizedCallable c, ReturnKind rk) {
-  result = getErasedRepr(getReturnTypeBase(c, rk))
+  rk instanceof NormalReturnKind and
+  result = getErasedRepr(c.getReturnType())
   or
-  rk =
-    any(JumpReturnKind jrk |
-      result =
-        getErasedRepr(getReturnTypeBase(jrk.getTarget().getCallee(), jrk.getTargetReturnKind()))
-    )
+  rk = any(JumpReturnKind jrk | result = getErasedRepr(exprNode(jrk.getTarget()).getTypeBound()))
 }
 
 /**
