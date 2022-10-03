@@ -279,7 +279,7 @@ private class StartComponentMethodAccess extends MethodAccess {
 }
 
 /**
- * Holds if `src` reaches the intent argument of a `StartComponentMethodAccess`
+ * Holds if `src` reaches the intent argument of an argument `arg` of `StartComponentMethodAccess`
  * through intra-procedural steps.
  */
 private predicate reaches(Expr src, Argument arg) {

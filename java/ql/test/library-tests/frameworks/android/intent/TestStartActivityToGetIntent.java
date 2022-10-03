@@ -35,6 +35,12 @@ public class TestStartActivityToGetIntent {
             act.startActivities(intents);
         }
         {
+            Intent intent = new Intent(null, Object.class);
+            intent.putExtra("data", (String) source("start-activities-should-not-reach"));
+            Intent[] intents = new Intent[] {intent};
+            act.startActivities(intents);
+        }
+        {
             Intent intent = new Intent(null, SomeActivity.class);
             intent.putExtra("data", (String) source("start-if-needed"));
             act.startActivityIfNeeded(intent, 0);
