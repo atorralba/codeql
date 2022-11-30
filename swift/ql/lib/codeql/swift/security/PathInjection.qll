@@ -37,23 +37,31 @@ private class DefaultPathInjectionSanitizer extends PathInjectionSanitizer {
   DefaultPathInjectionSanitizer() {
     // This is a simplified implementation.
     // TODO: Implement a complete path sanitizer when Guards are available.
-    exists(CallExpr starts, CallExpr normalize, DataFlow::Node validated |
-      starts.getStaticTarget().getName() = "starts(with:)" and
-      starts.getStaticTarget().getEnclosingDecl() instanceof FilePath and
-      normalize.getStaticTarget().getName() = "lexicallyNormalized()" and
-      normalize.getStaticTarget().getEnclosingDecl() instanceof FilePath
-    |
-      TaintTracking::localTaint(validated, DataFlow::exprNode(normalize.getQualifier())) and
-      DataFlow::localExprFlow(normalize, starts.getQualifier()) and
+    exists(CallExpr validate, DataFlow::Node validated |
       DataFlow::localFlow(validated, this) and
+      normalizedAndValidated(validated, validate) and
       exists(ConditionBlock bb, SuccessorTypes::BooleanSuccessor b |
-        bb.getANode().getNode().asAstNode().(IfStmt).getACondition() = getImmediateParent*(starts) and
+        bb.getANode().getNode().asAstNode().(IfStmt).getACondition() = getImmediateParent*(validate) and
         b.getValue() = true
       |
         bb.controls(this.getCfgNode().getBasicBlock(), b)
       )
     )
   }
+}
+
+/** Holds if `validated` is normalized and then validated by `validate`. */
+pragma[nomagic]
+private predicate normalizedAndValidated(DataFlow::Node validated, CallExpr validate) {
+  exists(CallExpr normalize |
+    validate.getStaticTarget().getName() = "starts(with:)" and
+    validate.getStaticTarget().getEnclosingDecl() instanceof FilePath and
+    normalize.getStaticTarget().getName() = "lexicallyNormalized()" and
+    normalize.getStaticTarget().getEnclosingDecl() instanceof FilePath
+  |
+    TaintTracking::localTaint(validated, DataFlow::exprNode(normalize.getQualifier())) and
+    DataFlow::localExprFlow(normalize, validate.getQualifier())
+  )
 }
 
 private class PathInjectionSinks extends SinkModelCsv {
