@@ -140,3 +140,9 @@ private class NumberTaintPreservingCallable extends TaintPreservingCallable {
  * map-key and map-value content, so that e.g. a tainted `Map` is assumed to have tainted keys and values.
  */
 abstract class TaintInheritingContent extends DataFlow::Content { }
+
+class FieldValueStep extends AdditionalTaintStep {
+  override predicate step(DataFlow::Node node1, DataFlow::Node node2) {
+    node2.asExpr().(FieldRead).getField() = node1.(DataFlow::FieldValueNode).getField()
+  }
+}

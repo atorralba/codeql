@@ -146,7 +146,7 @@ private class GuiceRequestParameterSource extends RemoteFlowSource {
 private class Struts2ActionSupportClassFieldReadSource extends RemoteFlowSource {
   Struts2ActionSupportClassFieldReadSource() {
     exists(Struts2ActionSupportClass c |
-      c.getASetterMethod().getField() = this.asExpr().(FieldRead).getField()
+      c.getASetterMethod().getField() = this.(DataFlow::FieldValueNode).getField()
     )
   }
 
