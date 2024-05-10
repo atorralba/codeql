@@ -5,6 +5,7 @@ import semmle.code.java.dataflow.TaintTracking
 import semmle.code.java.frameworks.android.Intent
 import semmle.code.java.frameworks.android.PendingIntent
 import semmle.code.java.security.ImplicitPendingIntents
+private import semmle.code.java.security.Sanitizers
 
 /**
  * DEPRECATED: Use `ImplicitPendingIntentStartFlow` instead.
@@ -70,7 +71,9 @@ module ImplicitPendingIntentStartConfig implements DataFlow::StateConfigSig {
     sink instanceof ImplicitPendingIntentSink and state instanceof MutablePendingIntent
   }
 
-  predicate isBarrier(DataFlow::Node sanitizer) { sanitizer instanceof ExplicitIntentSanitizer }
+  predicate isBarrier(DataFlow::Node sanitizer) {
+    sanitizer instanceof ExplicitIntentSanitizer or sanitizer instanceof SimpleTypeSanitizer
+  }
 
   predicate isAdditionalFlowStep(DataFlow::Node node1, DataFlow::Node node2) {
     any(ImplicitPendingIntentAdditionalTaintStep c).step(node1, node2)
